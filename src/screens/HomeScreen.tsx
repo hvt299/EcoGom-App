@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     StyleSheet, Text, View, TextInput, FlatList,
-    ActivityIndicator, RefreshControl
+    ActivityIndicator, RefreshControl, useColorScheme
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Truck, AlertTriangle, Leaf, Clock, MapPin } from 'lucide-react-native';
 import LeafletMap from '../components/LeafletMap';
@@ -16,6 +17,7 @@ export default function HomeScreen() {
     const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const colorScheme = useColorScheme();
 
     const fetchAllData = async () => {
         const scheduleData = await wasteApi.getTodaySchedule('Thôn Đông');
@@ -163,6 +165,11 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <StatusBar
+                style={colorScheme === 'dark' ? 'light' : 'dark'}
+                backgroundColor={colorScheme === 'dark' ? '#000' : '#fff'}
+            />
+
             {/* Header App */}
             <View style={styles.header}>
                 <View style={styles.logoContainer}>

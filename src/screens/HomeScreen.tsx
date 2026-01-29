@@ -4,8 +4,8 @@ import {
     ActivityIndicator, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Search, Truck, AlertTriangle, Leaf, Clock, MapPin } from 'lucide-react-native';
+import LeafletMap from '../components/LeafletMap';
 import { wasteApi } from '../services/api';
 import { Waste, ScheduleResponse, Location } from '../types/waste';
 
@@ -128,28 +128,7 @@ export default function HomeScreen() {
                 <Text style={styles.sectionTitle}>Điểm thu gom gần bạn:</Text>
             </View>
             <View style={styles.mapContainer}>
-                <MapView
-                    style={styles.map}
-                    provider={PROVIDER_DEFAULT}
-                    initialRegion={{
-                        latitude: 21.028511,
-                        longitude: 105.854444,
-                        latitudeDelta: 0.05,
-                        longitudeDelta: 0.05,
-                    }}
-                >
-                    {locations.map((loc) => (
-                        <Marker
-                            key={loc._id}
-                            coordinate={{
-                                latitude: loc.location.coordinates[1], // MongoDB là [Long, Lat] nên phải đảo
-                                longitude: loc.location.coordinates[0],
-                            }}
-                            title={loc.name}
-                            description={loc.address_hint}
-                        />
-                    ))}
-                </MapView>
+                <LeafletMap locations={locations} />
             </View>
 
             {/* 3. Ô tìm kiếm */}

@@ -13,20 +13,3 @@ export interface Waste {
   processing_steps: ProcessingStep[];
   is_active: boolean;
 }
-
-export interface ScheduleResponse {
-  type: 'SPECIAL' | 'STANDARD' | 'NONE';
-  message: string;
-  is_cancelled: boolean;
-  time?: string;
-  waste_type?: string;
-  note?: string;
-}
-
-export interface Location {
-  _id: string;
-  name: string;
-  type: string;
-  address_hint: string;
-  location: { coordinates: [number, number] }; // [Long, Lat]
-}

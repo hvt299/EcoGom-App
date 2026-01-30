@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     StyleSheet, Text, View, TextInput, FlatList,
-    ActivityIndicator, RefreshControl, TouchableOpacity
+    ActivityIndicator, RefreshControl, TouchableOpacity, Modal
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Truck, AlertTriangle, Leaf, Clock, MapPin, ChevronDown, Bell, Info } from 'lucide-react-native';
+import { Search, Truck, AlertTriangle, Leaf, Clock, MapPin, ChevronDown, Bell, Info, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocationExpo from 'expo-location';
 
@@ -15,6 +15,7 @@ import { wasteApi, scheduleApi, locationApi } from '../services/api';
 import { Waste } from '../types/waste';
 import { ScheduleResponse, Schedule, SpecialEvent } from '../types/schedule';
 import { Location } from '../types/location';
+import { processScheduleData } from '../utils/dataProcessor';
 
 export default function HomeScreen() {
     const [keyword, setKeyword] = useState('');
@@ -24,8 +25,11 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     const [userLocation, setUserLocation] = useState<[number, number]>([21.028511, 105.854444]);
-    const [villages, setVillages] = useState<string[]>([]);
     const [selectedVillage, setSelectedVillage] = useState<string>("");
+    const [showVillagePicker, setShowVillagePicker] = useState(false);
+    const [groupedVillages, setGroupedVillages] = useState<Record<string, string[]>>({});
+    const [wards, setWards] = useState<string[]>([]);
+    const [activeWardTab, setActiveWardTab] = useState<string>("");
 
     const [todaySchedule, setTodaySchedule] = useState<ScheduleResponse | null>(null);
     const [fullSchedule, setFullSchedule] = useState<Schedule | null>(null);
@@ -36,11 +40,13 @@ export default function HomeScreen() {
         const initData = async () => {
             const allSchedules = await scheduleApi.getAll();
             if (allSchedules && allSchedules.length > 0) {
-                const villageNames = allSchedules.map(s => s.village_name);
-                setVillages(villageNames);
-                if (!villageNames.includes(selectedVillage)) {
-                    setSelectedVillage(villageNames[0]);
-                }
+                const { groupedVillages, wards, defaultWard, defaultVillage } = processScheduleData(allSchedules);
+                
+                setGroupedVillages(groupedVillages);
+                setWards(wards);
+
+                if (defaultWard) setActiveWardTab(defaultWard);
+                if (defaultVillage && !selectedVillage) setSelectedVillage(defaultVillage);
             }
             const locationData = await locationApi.getAll();
             setLocations(locationData);
@@ -105,6 +111,7 @@ export default function HomeScreen() {
                 <TextInput
                     style={styles.input}
                     placeholder="Tìm rác (VD: pin, vỏ lon...)"
+                    placeholderTextColor="#94a3b8"
                     value={keyword}
                     onChangeText={setKeyword}
                 />
@@ -197,12 +204,6 @@ export default function HomeScreen() {
         </View>
     );
 
-    const toggleVillage = () => {
-        const currentIndex = villages.indexOf(selectedVillage);
-        const nextIndex = (currentIndex + 1) % villages.length;
-        setSelectedVillage(villages[nextIndex]);
-    };
-
     return (
         <View style={styles.container}>
             <StatusBar style="light" />
@@ -217,7 +218,7 @@ export default function HomeScreen() {
                         </View>
 
                         {/* Selector đơn giản */}
-                        <TouchableOpacity style={styles.villageSelector} onPress={toggleVillage}>
+                        <TouchableOpacity style={styles.villageSelector} onPress={() => setShowVillagePicker(true)}>
                             <Text style={styles.villageText}>{selectedVillage || "Đang tải..."}</Text>
                             <ChevronDown size={16} color="white" />
                         </TouchableOpacity>
@@ -244,6 +245,89 @@ export default function HomeScreen() {
                 />
             </View>
 
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={showVillagePicker}
+                onRequestClose={() => setShowVillagePicker(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Chọn khu vực</Text>
+                            <TouchableOpacity onPress={() => setShowVillagePicker(false)}>
+                                <Text style={styles.closeText}>Đóng</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* LIST XÃ (Tab Ngang) */}
+                        <View style={styles.tabsContainer}>
+                            <FlatList
+                                data={wards}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                keyExtractor={(item) => item}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.tabItem,
+                                            activeWardTab === item && styles.tabItemSelected
+                                        ]}
+                                        onPress={() => setActiveWardTab(item)}
+                                    >
+                                        <Text style={[
+                                            styles.tabText,
+                                            activeWardTab === item && styles.tabTextSelected
+                                        ]}>
+                                            {item}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        </View>
+
+                        {/* LIST THÔN (Dọc) */}
+                        <View style={styles.listContainer}>
+                            <Text style={styles.subHeader}>
+                                {activeWardTab ? `Danh sách thôn thuộc ${activeWardTab}:` : 'Đang tải...'}
+                            </Text>
+
+                            {(!groupedVillages[activeWardTab] || groupedVillages[activeWardTab].length === 0) ? (
+                                <Text style={{ textAlign: 'center', marginTop: 20, color: '#94a3b8' }}>
+                                    Không có dữ liệu thôn
+                                </Text>
+                            ) : (
+                                <FlatList
+                                    data={groupedVillages[activeWardTab]}
+                                    extraData={activeWardTab}
+                                    keyExtractor={(item, index) => `${item}-${index}`}
+                                    contentContainerStyle={{ paddingBottom: 20 }}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.villageItem,
+                                                item === selectedVillage && styles.villageItemSelected
+                                            ]}
+                                            onPress={() => {
+                                                setSelectedVillage(item);
+                                                setShowVillagePicker(false);
+                                            }}
+                                        >
+                                            <Text style={[
+                                                styles.villageItemText,
+                                                item === selectedVillage && styles.villageItemTextSelected
+                                            ]}>
+                                                {item}
+                                            </Text>
+                                            {item === selectedVillage && <Check size={18} color="#16a34a" />}
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <ScheduleDetailModal visible={showDetailModal} onClose={() => setShowDetailModal(false)} schedule={fullSchedule} />
         </View>
     );
@@ -298,4 +382,46 @@ const styles = StyleSheet.create({
     wasteCategory: { fontSize: 10, fontWeight: 'bold', color: '#15803d', backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden', marginBottom: 4 },
     wastePrice: { fontSize: 14, fontWeight: 'bold', color: '#16a34a' },
     emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 20 },
+
+    modalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20
+    },
+    modalContent: {
+        backgroundColor: 'white', borderRadius: 16, padding: 16, height: '60%',
+        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5
+    },
+    modalHeader: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9'
+    },
+    modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
+    closeText: { color: '#64748b', fontWeight: 'bold' },
+
+    tabsContainer: { paddingHorizontal: 12, marginBottom: 16, maxHeight: 50 },
+    tabItem: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 8, borderWidth: 1, borderColor: '#e2e8f0' },
+    tabItemSelected: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
+    tabText: { fontSize: 14, color: '#64748b', fontWeight: '600' },
+    tabTextSelected: { color: 'white' },
+
+    listContainer: { flex: 1, paddingHorizontal: 10, marginTop: 10, width: '100%' },
+    subHeader: { fontSize: 13, color: '#94a3b8', marginBottom: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+    villageItem: {
+        flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f8fafc'
+    },
+    villageItemSelected: { backgroundColor: '#f0fdf4', borderRadius: 8 },
+    villageItemText: { fontSize: 15, color: '#334155' },
+    villageItemTextSelected: { color: '#16a34a', fontWeight: 'bold' },
+
+    sectionHeaderContainer: {
+        backgroundColor: '#f1f5f9',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        marginTop: 10,
+        borderRadius: 8
+    },
+    sectionHeaderText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#475569',
+        textTransform: 'uppercase'
+    },
 });

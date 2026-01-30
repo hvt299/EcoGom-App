@@ -16,7 +16,7 @@ export default function LeafletMap({ locations, center }: Props) {
     if (webviewRef.current) {
       const script = `
                 if (typeof map !== 'undefined') {
-                    map.flyTo([${center[0]}, ${center[1]}], 14, { duration: 1.5 });
+                    map.flyTo([${center[0]}, ${center[1]}], 14, { duration: 2 });
                     if (userMarker) {
                         userMarker.setLatLng([${center[0]}, ${center[1]}]);
                     }
@@ -69,6 +69,11 @@ export default function LeafletMap({ locations, center }: Props) {
           
           // Tạo marker user
           var userMarker = L.marker([${center[0]}, ${center[1]}], {icon: userIcon}).addTo(map);
+          userMarker.bindPopup('<b style="color:#2563eb">Vị trí của bạn</b>');
+          userMarker.on('click', function(e) {
+              L.DomEvent.stopPropagation(e);
+              this.openPopup();
+          });
 
           var locations = ${locationsJson};
           if (locations && locations.length > 0) {

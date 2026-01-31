@@ -197,11 +197,11 @@ export default function HomeScreen() {
 
         return (
             <View style={styles.wasteItem}>
-                <View>
+                <View style={{ flex: 1, paddingRight: 8 }}>
                     <Text style={styles.wasteName}>{item.name}</Text>
-                    <Text style={styles.wasteLocal}>Gọi là: {item.local_names.join(', ')}</Text>
+                    <Text style={styles.wasteLocal} numberOfLines={1}>Gọi là: {item.local_names.join(', ')}</Text>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
+                <View style={{ alignItems: 'flex-end', minWidth: 80 }}>
                     <View style={{
                         backgroundColor: styleParams.bgColor,
                         paddingHorizontal: 8,

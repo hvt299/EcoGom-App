@@ -16,6 +16,7 @@ import { Waste } from '../types/waste';
 import { ScheduleResponse, Schedule, SpecialEvent } from '../types/schedule';
 import { Location } from '../types/location';
 import { processScheduleData } from '../utils/dataProcessor';
+import { getWasteCategoryStyle, formatCurrency } from '../utils/wasteHelper';
 
 export default function HomeScreen() {
     const [keyword, setKeyword] = useState('');
@@ -41,7 +42,7 @@ export default function HomeScreen() {
             const allSchedules = await scheduleApi.getAll();
             if (allSchedules && allSchedules.length > 0) {
                 const { groupedVillages, wards, defaultWard, defaultVillage } = processScheduleData(allSchedules);
-                
+
                 setGroupedVillages(groupedVillages);
                 setWards(wards);
 
@@ -191,18 +192,37 @@ export default function HomeScreen() {
     );
 
     // --- ITEM RÁC (Chỉ hiện khi Search) ---
-    const renderWasteItem = ({ item }: { item: Waste }) => (
-        <View style={styles.wasteItem}>
-            <View>
-                <Text style={styles.wasteName}>{item.name}</Text>
-                <Text style={styles.wasteLocal}>Gọi là: {item.local_names.join(', ')}</Text>
+    const renderWasteItem = ({ item }: { item: Waste }) => {
+        const styleParams = getWasteCategoryStyle(item.category);
+
+        return (
+            <View style={styles.wasteItem}>
+                <View>
+                    <Text style={styles.wasteName}>{item.name}</Text>
+                    <Text style={styles.wasteLocal}>Gọi là: {item.local_names.join(', ')}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{
+                        backgroundColor: styleParams.bgColor,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 8,
+                        marginBottom: 4,
+                        borderWidth: 1,
+                        borderColor: styleParams.borderColor
+                    }}>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: styleParams.color }}>{styleParams.label.toUpperCase()}</Text>
+                    </View>
+                    
+                    <Text style={styles.wastePrice}>
+                        {item.estimated_price > 0
+                            ? `${formatCurrency(item.estimated_price)}/${item.unit}`
+                            : "---"}
+                    </Text>
+                </View>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.wasteCategory}>{item.category}</Text>
-                <Text style={styles.wastePrice}>{item.estimated_price}</Text>
-            </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>

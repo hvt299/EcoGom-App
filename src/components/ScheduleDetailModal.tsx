@@ -36,7 +36,7 @@ export default function ScheduleDetailModal({ visible, onClose, schedule }: Prop
                     </View>
 
                     {/* Body */}
-                    <ScrollView style={styles.body}>
+                    <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
                         {sortedSchedule.length === 0 ? (
                             <Text style={styles.emptyText}>Chưa có lịch định kỳ.</Text>
                         ) : (
@@ -75,12 +75,12 @@ export default function ScheduleDetailModal({ visible, onClose, schedule }: Prop
 
 const styles = StyleSheet.create({
     centeredView: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
-    modalView: { backgroundColor: 'white', borderRadius: 20, overflow: 'hidden', height: '60%' },
+    modalView: { backgroundColor: 'white', borderRadius: 20, overflow: 'hidden', maxHeight: '60%', width: '100%' },
     header: { backgroundColor: '#16a34a', padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerTitle: { color: 'white', fontWeight: 'bold', fontSize: 18 },
     headerSubtitle: { color: 'rgba(255,255,255,0.9)', fontSize: 13 },
     closeBtn: { padding: 4 },
-    body: { padding: 16 },
+    body: { padding: 16, flexGrow: 1 },
     itemRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
     dayBadge: { backgroundColor: '#dcfce7', width: 50, height: 50, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
     dayText: { color: '#15803d', fontWeight: 'bold', fontSize: 12, textAlign: 'center' },
